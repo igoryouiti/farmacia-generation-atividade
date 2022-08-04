@@ -1,6 +1,7 @@
 package br.org.generation.crudfarmacia.controller;
 
 import br.org.generation.crudfarmacia.model.Produto;
+import br.org.generation.crudfarmacia.repository.CategoriaRepository;
 import br.org.generation.crudfarmacia.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,9 @@ public class ProdutoController {
 
     @Autowired
     private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private CategoriaRepository categoriaRepository;
 
 
     @GetMapping
@@ -41,16 +45,25 @@ public class ProdutoController {
 
     @PostMapping
     public ResponseEntity<Produto> post(@Valid @RequestBody Produto produto){
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(produtoRepository.save(produto));
+
+        if(categoriaRepository.existsById(produto.getCategoria().getId())) {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(produtoRepository.save(produto));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
 
     @PutMapping
     public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto){
-        return produtoRepository.findById(produto.getId())
-                .map(resposta -> ResponseEntity.status(HttpStatus.OK)
-                        .body(produtoRepository.save(produto)))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        if (produtoRepository.existsById(produto.getId())){
+
+            if (categoriaRepository.existsById(produto.getCategoria().getId()))
+                return ResponseEntity.status(HttpStatus.OK)
+                        .body(produtoRepository.save(produto));
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
